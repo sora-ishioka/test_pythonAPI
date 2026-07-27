@@ -1,8 +1,13 @@
-- name: DNS Check
-  run: |
-    nslookup rddx-func-user4.azurewebsites.net
-    nslookup rddx-func-user4.scm.azurewebsites.net
+jobs:
+  test:
+    runs-on: ubuntu-latest
 
-- name: Connectivity Check
-  run: |
-    curl -I https://rddx-func-user4.scm.azurewebsites.net
+    steps:
+      - name: DNS Check
+        run: |
+          nslookup rddx-func-user4.azurewebsites.net
+          nslookup rddx-func-user4.scm.azurewebsites.net
+
+      - name: Connectivity Check
+        run: |
+          curl -I https://rddx-func-user4.scm.azurewebsites.net
