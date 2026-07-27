@@ -15,4 +15,4 @@ jobs:
 
       - name: Connectivity Check
         run: |
-          curl -I https://rddx-func-user4.scm.azurewebsites.net
+          curl -Iv https://rddx-func-user4.scm.azurewebsites.net
