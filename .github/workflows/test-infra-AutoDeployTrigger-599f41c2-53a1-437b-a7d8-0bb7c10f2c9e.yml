@@ -1,18 +1,38 @@
-name: Network Test
+name: Build and Deploy
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  test:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: DNS Check
-        run: |
-          nslookup rddx-func-user4.azurewebsites.net
-          nslookup rddx-func-user4.scm.azurewebsites.net
+      - uses: actions/checkout@v4
 
-      - name: Connectivity Check
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.TESTINFRA_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.TESTINFRA_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.TESTINFRA_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build Image in ACR
         run: |
-          curl -Iv https://rddx-func-user4.scm.azurewebsites.net
+          az acr build \
+            --registry testinfraxxx \
+            --image test-infra:${{ github.sha }} \
+            .
+
+      - name: Deploy ACA
+        run: |
+          az containerapp update \
+            --name test-infra \
+            --resource-group ex-INT-AOAIS-POC \
+            --image testinfraxxx.azurecr.io/test-infra:${{ github.sha }}
