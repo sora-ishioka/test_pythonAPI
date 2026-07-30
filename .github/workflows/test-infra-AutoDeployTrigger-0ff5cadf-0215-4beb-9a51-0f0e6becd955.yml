@@ -1,28 +1,20 @@
-name: Trigger auto deployment for test-infra
+name: Build and Deploy
 
-# When this action will be executed
 on:
-  # Automatically trigger it when detected changes in repo
   push:
-    branches: 
-      [ main ]
-    paths:
-    - '**'
-    - '.github/workflows/test-infra-AutoDeployTrigger-0ff5cadf-0215-4beb-9a51-0f0e6becd955.yml'
+    branches:
+      - main
 
-  # Allow manual trigger 
-  workflow_dispatch:      
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions: 
-      id-token: write #This is required for requesting the OIDC JWT Token
-      contents: read #Required when GH token is used to authenticate with private repo
 
     steps:
-      - name: Checkout to the branch
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Azure Login
         uses: azure/login@v2
@@ -31,19 +23,16 @@ jobs:
           tenant-id: ${{ secrets.TESTINFRA_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.TESTINFRA_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push container image to registry
-        uses: azure/container-apps-deploy-action@v2
-        with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
-          registryUrl: testinfraxxx.azurecr.io
-          registryUsername: ${{ secrets.TESTINFRA_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.TESTINFRA_REGISTRY_PASSWORD }}
-          containerAppName: test-infra
-          resourceGroup: ex-INT-AOAIS-POC
-          imageToBuild: testinfraxxx.azurecr.io/test-infra:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
+      - name: Build Image in ACR
+        run: |
+          az acr build \
+            --registry testinfraxxx \
+            --image test-infra:${{ github.sha }} \
+            .
 
-
+      - name: Deploy ACA
+        run: |
+          az containerapp update \
+            --name test-infra \
+            --resource-group ex-INT-AOAIS-POC \
+            --image testinfraxxx.azurecr.io/test-infra:${{ github.sha }}
