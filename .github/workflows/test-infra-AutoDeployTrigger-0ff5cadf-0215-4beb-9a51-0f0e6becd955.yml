@@ -25,5 +25,5 @@ jobs:
 
       - name: Run ACR Task
         run: |
-          az acr task run --registry myacr --name aca-build
+          az acr task run --registry testinfraxxx --name test-infra
           
